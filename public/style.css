@@ -1,0 +1,121 @@
+body {
+  font-family: 'Noto Sans JP', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  max-width: 600px;
+  margin: 3em auto;
+  padding: 1em 2em;
+  background: linear-gradient(135deg, #e0e0e0, #f0f0f0);
+  color: #333;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+  font-size: 2.8rem;
+  text-align: center;
+  color: #555;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+  margin-bottom: 1em;
+  font-weight: 800;
+}
+
+label, select, button, textarea, pre, ul {
+  display: block;
+  margin-top: 1em;
+}
+
+select {
+  background: #f8f8f8;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 0.6em 1em;
+  color: #333;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+select:hover {
+  border-color: #aaa;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+button {
+  background: linear-gradient(145deg, #f0f0f0, #e0e0e0);
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  color: #333;
+  padding: 0.8em 1.8em;
+  font-weight: 700;
+  font-size: 1.1rem;
+  cursor: pointer;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
+  transition: all 0.3s ease;
+}
+
+button:hover:not(:disabled) {
+  background: linear-gradient(145deg, #e0e0e0, #d0d0d0);
+  box-shadow: 0 5px 12px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  background: #eee;
+  border-color: #ddd;
+  cursor: not-allowed;
+  box-shadow: none;
+  color: #999;
+}
+
+textarea, pre {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  padding: 1em;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.95rem;
+  background: #fcfcfc;
+  color: #333;
+  box-sizing: border-box;
+  resize: vertical;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+ul {
+  padding-left: 1.5em;
+  list-style-type: disc;
+  color: #444;
+  font-weight: 600;
+}
+
+li {
+  margin-bottom: 0.6em;
+}
+
+li button {
+  margin-left: 0.6em;
+  background: #e8e8e8;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  color: #555;
+  padding: 0.3em 0.7em;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+}
+
+li button:hover {
+  background: #ddd;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+}
+
+code {
+  background: #f0f0f0;
+  padding: 3px 7px;
+  border-radius: 6px;
+  font-weight: 700;
+  color: #d63232;
+  font-family: 'Courier New', Courier, monospace;
+}
