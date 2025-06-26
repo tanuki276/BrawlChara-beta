@@ -5,13 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Brawlchara</title>
   <link rel="stylesheet" href="/style.css" />
-  <link rel="icon" href="/32x32.png" type="image/png" sizes="32x32" />
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    crossorigin="anonymous"
-    referrerpolicy="no-referrer"
-  />
+  <link rel="icon" href="/public/32×32.png" type="image/png" sizes="32×32" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <style>
     #betaNotice {
       background-color: #fff3cd;
@@ -140,32 +135,6 @@
     const characterResult = document.getElementById('characterResult');
     const getCharacterBtn = document.getElementById('getCharacter');
 
-    function saveTokenToLocalStorage(token, expiresIn) {
-      const tokens = JSON.parse(localStorage.getItem('tokens') || '[]');
-      const expiresAt = expiresIn === 'never' ? null : Date.now() + parseInt(expiresIn) * 1000;
-      tokens.unshift({ token, expiresAt });
-      localStorage.setItem('tokens', JSON.stringify(tokens.slice(0, 10)));
-    }
-
-    function loadTokensFromLocalStorage() {
-      const tokens = JSON.parse(localStorage.getItem('tokens') || '[]');
-      tokenList.innerHTML = '';
-      if (tokens.length === 0) {
-        tokenList.innerHTML = '<li>トークンがありません</li>';
-      } else {
-        tokens.forEach(({ token, expiresAt }) => {
-          const li = document.createElement('li');
-          const code = document.createElement('code');
-          code.textContent = token;
-          li.appendChild(code);
-          const span = document.createElement('span');
-          span.textContent = expiresAt ? `（${new Date(expiresAt).toLocaleString()}まで）` : '（無期限）';
-          li.appendChild(span);
-          tokenList.appendChild(li);
-        });
-      }
-    }
-
     generateBtn.addEventListener('click', async () => {
       generateBtn.disabled = true;
       generateBtn.classList.add('loading');
@@ -181,12 +150,14 @@
         if (res.ok) {
           output.value = data.token;
           copyBtn.disabled = false;
-          saveTokenToLocalStorage(data.token, data.expiresIn);
-          loadTokensFromLocalStorage();
+          const tokens = JSON.parse(localStorage.getItem('tokens') || '[]');
+          tokens.unshift({ token: data.token, expiresAt: Date.now() + (expires * 1000 || Infinity) });
+          localStorage.setItem('tokens', JSON.stringify(tokens.slice(0, 10)));
+          updateTokenList();
         } else {
           alert(data.error || 'トークン生成に失敗しました');
         }
-      } catch {
+      } catch (err) {
         alert('通信エラーが発生しました');
       }
       generateBtn.disabled = false;
@@ -203,16 +174,49 @@
       });
     });
 
+    function updateTokenList() {
+      const tokens = JSON.parse(localStorage.getItem('tokens') || '[]');
+      tokenList.innerHTML = '';
+      if (tokens.length === 0) {
+        tokenList.innerHTML = '<li>トークンがありません</li>';
+      } else {
+        tokens.forEach((t) => {
+          const li = document.createElement('li');
+          const code = document.createElement('code');
+          code.textContent = t.token;
+          li.appendChild(code);
+          const span = document.createElement('span');
+          if (t.expiresAt === Infinity) {
+            span.textContent = '（無期限）';
+          } else {
+            span.textContent = `（${new Date(t.expiresAt).toLocaleString()}まで）`;
+          }
+          li.appendChild(span);
+          tokenList.appendChild(li);
+        });
+      }
+    }
+
     getCharacterBtn.addEventListener('click', async () => {
       getCharacterBtn.disabled = true;
       getCharacterBtn.classList.add('loading');
       getCharacterBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 読み込み中…';
       try {
-        const res = await fetch('/api/character');
+        const tokens = JSON.parse(localStorage.getItem('tokens') || '[]');
+        if (!tokens.length) {
+          characterResult.textContent = 'トークンがありません。先にトークンを生成してください。';
+          return;
+        }
+        const latestToken = tokens[0].token;
+        const res = await fetch(`/api/character?token=${encodeURIComponent(latestToken)}`);
         const data = await res.json();
-        characterResult.textContent = JSON.stringify(data, null, 2);
+        if (res.ok) {
+          characterResult.textContent = JSON.stringify(data, null, 2);
+        } else {
+          characterResult.textContent = data.error || 'キャラの取得に失敗しました';
+        }
       } catch {
-        characterResult.textContent = 'キャラの取得に失敗しました';
+        characterResult.textContent = '通信エラーが発生しました';
       }
       getCharacterBtn.disabled = false;
       getCharacterBtn.classList.remove('loading');
@@ -237,7 +241,7 @@
       cookieConsent.style.display = 'none';
     });
 
-    loadTokensFromLocalStorage();
+    updateTokenList();
   </script>
 </body>
 </html>
