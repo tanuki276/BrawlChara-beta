@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Brawlchara</title>
   <link rel="stylesheet" href="/style.css" />
-  <link rel="icon" href="/public/32×32.png" type="image/png" sizes="32×32" />
+  <link rel="icon" href="/32x32.png" type="image/png" sizes="32x32" />
   <link
     rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -25,7 +25,6 @@
       max-width: 480px;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
     }
-
     #tokenList code {
       display: inline-block;
       max-width: 300px;
@@ -34,7 +33,6 @@
       text-overflow: ellipsis;
       vertical-align: middle;
     }
-
     #disclaimer {
       color: #6b0000;
       font-weight: 600;
@@ -48,12 +46,10 @@
       line-height: 1.2;
       user-select: none;
     }
-
     button.loading {
       opacity: 0.6;
       cursor: not-allowed;
     }
-
     #cookieConsent {
       position: fixed;
       bottom: 0;
@@ -70,14 +66,12 @@
       font-family: 'Arial', sans-serif;
       animation: fadeIn 0.5s ease-in-out;
     }
-
     #cookieConsent .button-container {
       display: flex;
       justify-content: center;
       gap: 10px;
       margin-top: 10px;
     }
-
     #cookieConsent button {
       background-color: #4CAF50;
       color: white;
@@ -88,16 +82,13 @@
       font-size: 1rem;
       transition: transform 0.2s, opacity 0.2s;
     }
-
     #cookieConsent button:hover {
       transform: scale(1.05);
       opacity: 0.95;
     }
-
     #cookieConsent button.no {
       background-color: #f44336;
     }
-
     @keyframes fadeIn {
       from {
         opacity: 0;
@@ -112,13 +103,8 @@
 </head>
 <body>
   <div id="betaNotice">⚠ このツールは現在<strong>ベータ版</strong>です。不具合や変更の可能性があります。</div>
-
-  <p id="disclaimer">
-    ※このツールはBrawlStars公式のものではありません。非公式のファンメイドツールです。
-  </p>
-  <h1>
-    <i class="fa-solid fa-user-ghost"></i>Brawlchara
-  </h1>
+  <p id="disclaimer">※このツールはBrawlStars公式のものではありません。非公式のファンメイドツールです。</p>
+  <h1><i class="fa-solid fa-user-ghost"></i>Brawlchara</h1>
   <label for="expires">トークン有効期限を選択:</label>
   <select id="expires">
     <option value="3600">1時間</option>
@@ -131,19 +117,13 @@
   <p>生成されたトークン:</p>
   <textarea id="tokenOutput" rows="4" cols="60" readonly></textarea>
   <h2>生成済みトークン一覧</h2>
-  <ul id="tokenList">
-    <li>トークンがありません</li>
-  </ul>
+  <ul id="tokenList"><li>トークンがありません</li></ul>
   <h2>キャラを取得</h2>
   <button id="getCharacter"><i class="fa-solid fa-dice-d20"></i> 試す</button>
   <pre id="characterResult"></pre>
   <h2><i class="fa-solid fa-book"></i> ドキュメントはこちらから</h2>
-  <p>
-    <a href="https://document-api-brawl-chara.vercel.app/" target="_blank" rel="noopener noreferrer">マニュアルを見る</a>
-  </p>
-  <p>
-    <a href="https://a-b-c.vercel.app/" target="_blank" rel="noopener noreferrer">お問い合わせ</a>
-  </p>
+  <p><a href="https://document-api-brawl-chara.vercel.app/" target="_blank" rel="noopener noreferrer">マニュアルを見る</a></p>
+  <p><a href="https://a-b-c.vercel.app/" target="_blank" rel="noopener noreferrer">お問い合わせ</a></p>
   <div id="cookieConsent">
     当サイトはクッキーを使用します。同意しますか？
     <div class="button-container">
@@ -157,17 +137,40 @@
     const output = document.getElementById('tokenOutput');
     const tokenList = document.getElementById('tokenList');
     const expiresSelect = document.getElementById('expires');
-
     const characterResult = document.getElementById('characterResult');
     const getCharacterBtn = document.getElementById('getCharacter');
+
+    function saveTokenToLocalStorage(token, expiresIn) {
+      const tokens = JSON.parse(localStorage.getItem('tokens') || '[]');
+      const expiresAt = expiresIn === 'never' ? null : Date.now() + parseInt(expiresIn) * 1000;
+      tokens.unshift({ token, expiresAt });
+      localStorage.setItem('tokens', JSON.stringify(tokens.slice(0, 10)));
+    }
+
+    function loadTokensFromLocalStorage() {
+      const tokens = JSON.parse(localStorage.getItem('tokens') || '[]');
+      tokenList.innerHTML = '';
+      if (tokens.length === 0) {
+        tokenList.innerHTML = '<li>トークンがありません</li>';
+      } else {
+        tokens.forEach(({ token, expiresAt }) => {
+          const li = document.createElement('li');
+          const code = document.createElement('code');
+          code.textContent = token;
+          li.appendChild(code);
+          const span = document.createElement('span');
+          span.textContent = expiresAt ? `（${new Date(expiresAt).toLocaleString()}まで）` : '（無期限）';
+          li.appendChild(span);
+          tokenList.appendChild(li);
+        });
+      }
+    }
 
     generateBtn.addEventListener('click', async () => {
       generateBtn.disabled = true;
       generateBtn.classList.add('loading');
       generateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 生成中…';
-
       const expires = parseInt(expiresSelect.value);
-
       try {
         const res = await fetch('/api/token', {
           method: 'POST',
@@ -178,14 +181,14 @@
         if (res.ok) {
           output.value = data.token;
           copyBtn.disabled = false;
-          updateTokenList();
+          saveTokenToLocalStorage(data.token, data.expiresIn);
+          loadTokensFromLocalStorage();
         } else {
           alert(data.error || 'トークン生成に失敗しました');
         }
-      } catch (err) {
+      } catch {
         alert('通信エラーが発生しました');
       }
-
       generateBtn.disabled = false;
       generateBtn.classList.remove('loading');
       generateBtn.innerHTML = '<i class="fa-solid fa-key"></i> トークン生成';
@@ -200,45 +203,22 @@
       });
     });
 
-    async function updateTokenList() {
-      const res = await fetch('/api/token');
-      const data = await res.json();
-      tokenList.innerHTML = '';
-      if (data.length === 0) {
-        tokenList.innerHTML = '<li>トークンがありません</li>';
-      } else {
-        data.forEach((t) => {
-          const li = document.createElement('li');
-          const code = document.createElement('code');
-          code.textContent = t.token;
-          li.appendChild(code);
-          const span = document.createElement('span');
-          span.textContent = `（${new Date(t.expiresAt).toLocaleString()}まで）`;
-          li.appendChild(span);
-          tokenList.appendChild(li);
-        });
-      }
-    }
-
     getCharacterBtn.addEventListener('click', async () => {
       getCharacterBtn.disabled = true;
       getCharacterBtn.classList.add('loading');
       getCharacterBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 読み込み中…';
-
       try {
         const res = await fetch('/api/character');
         const data = await res.json();
         characterResult.textContent = JSON.stringify(data, null, 2);
-      } catch (err) {
+      } catch {
         characterResult.textContent = 'キャラの取得に失敗しました';
       }
-
       getCharacterBtn.disabled = false;
       getCharacterBtn.classList.remove('loading');
       getCharacterBtn.innerHTML = '<i class="fa-solid fa-dice-d20"></i> 試す';
     });
 
-    // Cookie consent
     const cookieConsent = document.getElementById('cookieConsent');
     const acceptBtn = document.getElementById('acceptCookie');
     const declineBtn = document.getElementById('declineCookie');
@@ -257,8 +237,7 @@
       cookieConsent.style.display = 'none';
     });
 
-    // 初期化
-    updateTokenList();
+    loadTokensFromLocalStorage();
   </script>
 </body>
 </html>
