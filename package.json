@@ -1,7 +1,7 @@
 {
-  "name": "BrawlChara",
-  "version": "1.5.3",
-  "description": "Brawl Stars character API server",
+  "name": "BrawlChara-beta",
+  "version": "1.0.0",
+  "description": "Brawl Stars character API server beta",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
