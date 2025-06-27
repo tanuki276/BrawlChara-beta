@@ -13,6 +13,21 @@
     referrerpolicy="no-referrer"
   />
   <style>
+    /* ベータ版通知のスタイルを調整し、非公式免責事項と似た形式にします */
+    #betaNotice {
+      background-color: #fff3cd; /* 元のベータ版通知の色 */
+      color: #856404; /* 元のベータ版通知の色 */
+      border: 1px solid #ffeeba; /* 元のベータ版通知の色 */
+      padding: 5px 10px; /* disclaimerと合わせる */
+      margin-bottom: 8px; /* disclaimerと合わせる */
+      border-radius: 4px;
+      font-weight: 600; /* disclaimerと合わせる */
+      font-size: 0.8rem; /* disclaimerと合わせる */
+      max-width: 320px; /* disclaimerと合わせる */
+      line-height: 1.2; /* disclaimerと合わせる */
+      user-select: none; /* disclaimerと合わせる */
+      box-shadow: none; /* disclaimerにはシャドウがないため削除 */
+    }
     #tokenList code {
       display: inline-block;
       max-width: 300px;
@@ -93,10 +108,11 @@
   <p id="disclaimer">
     ※このツールはBrawlStars公式のものではありません。非公式のファンメイドツールです。
   </p>
+  <div id="betaNotice">⚠ このツールは現在<strong>ベータ版</strong>です。不具合や変更の可能性があります。</div>
+
   <h1>
     <i class="fa-solid fa-user-ghost"></i>Brawlchara
-    <small style="color: red; font-size: 0.5em; vertical-align: super; margin-left: 5px;">　　ベータ版</small>
-  </h1>
+    </h1>
   <label for="expires">トークン有効期限を選択:</label>
   <select id="expires">
     <option value="3600">1時間</option>
