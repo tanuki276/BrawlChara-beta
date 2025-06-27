@@ -6,20 +6,15 @@
   <title>Brawlchara</title>
   <link rel="stylesheet" href="/style.css" />
   <link rel="icon" href="/public/32×32.png" type="image/png" sizes="32×32" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
   <style>
-    #betaNotice {
-      background-color: #fff3cd;
-      color: #856404;
-      border: 1px solid #ffeeba;
-      padding: 10px 16px;
-      margin-bottom: 12px;
-      border-radius: 4px;
-      font-weight: bold;
-      font-size: 0.95rem;
-      max-width: 480px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-    }
+    /* 元々あった #betaNotice のスタイルは削除されましたが、 */
+    /* 代わりにタイトル横にベータ版の表示を追加します */
     #tokenList code {
       display: inline-block;
       max-width: 300px;
@@ -97,9 +92,13 @@
   </style>
 </head>
 <body>
-  <div id="betaNotice">⚠ このツールは現在<strong>ベータ版</strong>です。不具合や変更の可能性があります。</div>
-  <p id="disclaimer">※このツールはBrawlStars公式のものではありません。非公式のファンメイドツールです。</p>
-  <h1><i class="fa-solid fa-user-ghost"></i>Brawlchara</h1>
+  <p id="disclaimer">
+    ※このツールはBrawlStars公式のものではありません。非公式のファンメイドツールです。
+  </p>
+  <h1>
+    <i class="fa-solid fa-user-ghost"></i>Brawlchara
+    <small style="color: red; font-size: 0.5em; vertical-align: super; margin-left: 5px;">ベータ版</small>
+  </h1>
   <label for="expires">トークン有効期限を選択:</label>
   <select id="expires">
     <option value="3600">1時間</option>
@@ -112,13 +111,24 @@
   <p>生成されたトークン:</p>
   <textarea id="tokenOutput" rows="4" cols="60" readonly></textarea>
   <h2>生成済みトークン一覧</h2>
-  <ul id="tokenList"><li>トークンがありません</li></ul>
+  <ul id="tokenList">
+    <li>トークンがありません</li>
+  </ul>
   <h2>キャラを取得</h2>
   <button id="getCharacter"><i class="fa-solid fa-dice-d20"></i> 試す</button>
   <pre id="characterResult"></pre>
   <h2><i class="fa-solid fa-book"></i> ドキュメントはこちらから</h2>
-  <p><a href="https://document-api-brawl-chara.vercel.app/" target="_blank" rel="noopener noreferrer">マニュアルを見る</a></p>
-  <p><a href="https://a-b-c.vercel.app/" target="_blank" rel="noopener noreferrer">お問い合わせ</a></p>
+  <p>
+    <a
+      href="https://document-api-brawl-chara.vercel.app/"
+      target="_blank"
+      rel="noopener noreferrer"
+      >マニュアルを見る</a
+    >
+  </p>
+  <p>
+    <a href="https://a-b-c.vercel.app/" target="_blank" rel="noopener noreferrer">お問い合わせ</a>
+  </p>
   <div id="cookieConsent">
     当サイトはクッキーを使用します。同意しますか？
     <div class="button-container">
@@ -128,120 +138,241 @@
   </div>
   <script>
     const generateBtn = document.getElementById('generateToken');
+    const getCharBtn = document.getElementById('getCharacter');
     const copyBtn = document.getElementById('copyToken');
-    const output = document.getElementById('tokenOutput');
-    const tokenList = document.getElementById('tokenList');
-    const expiresSelect = document.getElementById('expires');
+    const tokenOutput = document.getElementById('tokenOutput');
     const characterResult = document.getElementById('characterResult');
-    const getCharacterBtn = document.getElementById('getCharacter');
+    const tokenList = document.getElementById('tokenList');
+    const STORAGE_KEY = 'brawlstar_tokens';
+    const cookieConsentDiv = document.getElementById('cookieConsent');
+    const acceptCookieBtn = document.getElementById('acceptCookie');
+    const declineCookieBtn = document.getElementById('declineCookie');
+    const COOKIE_CONSENT_KEY = 'cookieConsent';
 
-    generateBtn.addEventListener('click', async () => {
-      generateBtn.disabled = true;
-      generateBtn.classList.add('loading');
-      generateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 生成中…';
-      const expires = parseInt(expiresSelect.value);
+    function setLoading(button, isLoading) {
+      button.innerHTML = isLoading
+        ? '処理中...'
+        : button.id === 'generateToken'
+        ? '<i class="fa-solid fa-key"></i> トークン生成'
+        : '<i class="fa-solid fa-dice-d20"></i> 試す';
+      button.classList.toggle('loading', isLoading);
+      button.disabled = isLoading;
+    }
+
+    function loadTokens() {
       try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        let tokens = raw ? JSON.parse(raw) : [];
+        const now = Date.now();
+        tokens = tokens.filter(t => t.expiresAt === 0 || t.expiresAt > now);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(tokens));
+        return tokens;
+      } catch {
+        return [];
+      }
+    }
+
+    function saveTokens(tokens) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tokens));
+    }
+
+    function shortenToken(token) {
+      return token.length <= 20
+        ? token
+        : token.slice(0, 10) + '...' + token.slice(-6);
+    }
+
+    function renderTokenList() {
+      const tokens = loadTokens();
+      tokenList.innerHTML = '';
+      if (tokens.length === 0) {
+        const li = document.createElement('li');
+        li.textContent = 'トークンがありません';
+        tokenList.appendChild(li);
+        return;
+      }
+      tokens.forEach(({ token, expiresAt }, index) => {
+        const expText =
+          expiresAt === 0 ? '無制限' : new Date(expiresAt).toLocaleString();
+        const li = document.createElement('li');
+        const useBtn = document.createElement('button');
+        useBtn.dataset.index = index;
+        useBtn.className = 'useTokenBtn';
+        useBtn.title = 'このトークンを使う';
+        useBtn.textContent = '▶';
+        const code = document.createElement('code');
+        code.textContent = shortenToken(token);
+        const small = document.createElement('small');
+        small.textContent = `有効期限: ${expText}`;
+        const delBtn = document.createElement('button');
+        delBtn.dataset.index = index;
+        delBtn.className = 'delTokenBtn';
+        delBtn.title = '削除';
+        delBtn.style.color = 'red';
+        delBtn.textContent = '✕';
+        li.appendChild(useBtn);
+        li.appendChild(code);
+        li.appendChild(small);
+        li.appendChild(delBtn);
+        tokenList.appendChild(li);
+      });
+      document.querySelectorAll('.useTokenBtn').forEach(btn => {
+        btn.onclick = () => {
+          const idx = btn.dataset.index;
+          const tokens = loadTokens();
+          tokenOutput.value = tokens[idx].token;
+          copyBtn.disabled = false;
+          characterResult.textContent = '';
+        };
+      });
+      document.querySelectorAll('.delTokenBtn').forEach(btn => {
+        btn.onclick = () => {
+          const idx = btn.dataset.index;
+          let tokens = loadTokens();
+          tokens.splice(idx, 1);
+          saveTokens(tokens);
+          renderTokenList();
+          if (
+            tokenOutput.value &&
+            !tokens.some(t => t.token === tokenOutput.value)
+          ) {
+            tokenOutput.value = '';
+            copyBtn.disabled = true;
+            characterResult.textContent = '';
+          }
+        };
+      });
+    }
+
+    async function generateToken() {
+      setLoading(generateBtn, true);
+      characterResult.textContent = '';
+      copyBtn.disabled = true;
+      try {
+        const expiresInSec = parseInt(
+          document.getElementById('expires').value,
+          10
+        );
         const res = await fetch('/api/token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ expires })
+          body: JSON.stringify({
+            expiresIn: expiresInSec === 0 ? 'never' : expiresInSec,
+          }),
         });
+        if (!res.ok) throw new Error(`HTTPエラー: ${res.status}`);
         const data = await res.json();
-        if (res.ok) {
-          output.value = data.token;
+        if (data.token) {
+          tokenOutput.value = data.token;
           copyBtn.disabled = false;
-          const tokens = JSON.parse(localStorage.getItem('tokens') || '[]');
-          tokens.unshift({ token: data.token, expiresAt: Date.now() + (expires * 1000 || Infinity) });
-          localStorage.setItem('tokens', JSON.stringify(tokens.slice(0, 10)));
-          updateTokenList();
-        } else {
-          alert(data.error || 'トークン生成に失敗しました');
-        }
-      } catch (err) {
-        alert('通信エラーが発生しました');
-      }
-      generateBtn.disabled = false;
-      generateBtn.classList.remove('loading');
-      generateBtn.innerHTML = '<i class="fa-solid fa-key"></i> トークン生成';
-    });
-
-    copyBtn.addEventListener('click', () => {
-      navigator.clipboard.writeText(output.value).then(() => {
-        copyBtn.innerHTML = '<i class="fa-solid fa-check"></i> コピー完了';
-        setTimeout(() => {
-          copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i> トークンをコピー';
-        }, 1500);
-      });
-    });
-
-    function updateTokenList() {
-      const tokens = JSON.parse(localStorage.getItem('tokens') || '[]');
-      tokenList.innerHTML = '';
-      if (tokens.length === 0) {
-        tokenList.innerHTML = '<li>トークンがありません</li>';
-      } else {
-        tokens.forEach((t) => {
-          const li = document.createElement('li');
-          const code = document.createElement('code');
-          code.textContent = t.token;
-          li.appendChild(code);
-          const span = document.createElement('span');
-          if (t.expiresAt === Infinity) {
-            span.textContent = '（無期限）';
-          } else {
-            span.textContent = `（${new Date(t.expiresAt).toLocaleString()}まで）`;
+          const expiresAt =
+            data.expiresIn === 'never'
+              ? 0
+              : Date.now() + parseInt(data.expiresIn) * 1000;
+          let tokens = loadTokens();
+          if (!tokens.some(t => t.token === data.token)) {
+            tokens.push({ token: data.token, expiresAt });
+            saveTokens(tokens);
+            renderTokenList();
           }
-          li.appendChild(span);
-          tokenList.appendChild(li);
-        });
-      }
-    }
-
-    getCharacterBtn.addEventListener('click', async () => {
-      getCharacterBtn.disabled = true;
-      getCharacterBtn.classList.add('loading');
-      getCharacterBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 読み込み中…';
-      try {
-        const tokens = JSON.parse(localStorage.getItem('tokens') || '[]');
-        if (!tokens.length) {
-          characterResult.textContent = 'トークンがありません。先にトークンを生成してください。';
-          return;
-        }
-        const latestToken = tokens[0].token;
-        const res = await fetch(`/api/character?token=${encodeURIComponent(latestToken)}`);
-        const data = await res.json();
-        if (res.ok) {
-          characterResult.textContent = JSON.stringify(data, null, 2);
         } else {
-          characterResult.textContent = data.error || 'キャラの取得に失敗しました';
+          tokenOutput.value = 'トークン生成に失敗しました';
         }
-      } catch {
-        characterResult.textContent = '通信エラーが発生しました';
+      } catch (e) {
+        tokenOutput.value = `エラーが発生しました: ${e.message}`;
+      } finally {
+        setLoading(generateBtn, false);
       }
-      getCharacterBtn.disabled = false;
-      getCharacterBtn.classList.remove('loading');
-      getCharacterBtn.innerHTML = '<i class="fa-solid fa-dice-d20"></i> 試す';
-    });
-
-    const cookieConsent = document.getElementById('cookieConsent');
-    const acceptBtn = document.getElementById('acceptCookie');
-    const declineBtn = document.getElementById('declineCookie');
-
-    if (!localStorage.getItem('cookieConsent')) {
-      cookieConsent.style.display = 'block';
     }
 
-    acceptBtn.addEventListener('click', () => {
-      localStorage.setItem('cookieConsent', 'accepted');
-      cookieConsent.style.display = 'none';
+    async function getCharacter() {
+      const token = tokenOutput.value.trim();
+      if (!token) {
+        alert('▶でトークンを選択するかトークンを生成してください');
+        return;
+      }
+      setLoading(getCharBtn, true);
+      characterResult.textContent = '';
+      try {
+        const res = await fetch(`/api/character?token=${encodeURIComponent(token)}`);
+        if (!res.ok) throw new Error(`HTTPエラー: ${res.status}`);
+        const data = await res.json();
+        characterResult.textContent = data.error
+          ? 'エラー: ' + data.error
+          : `名前: ${data.name}\nレア度: ${data.rarity}\nタイプ: ${data.role}`;
+      } catch (e) {
+        characterResult.textContent = `通信エラーが発生しました: ${e.message}`;
+      } finally {
+        setLoading(getCharBtn, false);
+      }
+    }
+
+    async function copyTokenToClipboard() {
+      if (!tokenOutput.value) return;
+      try {
+        await navigator.clipboard.writeText(tokenOutput.value);
+        console.log('トークンをコピーしました');
+      } catch (err) {
+        console.error('クリップボードへのコピーに失敗:', err);
+      }
+    }
+
+    function checkCookieConsent() {
+      const consent = localStorage.getItem(COOKIE_CONSENT_KEY);
+      console.log('Cookie Consent Status:', consent);
+      return consent === 'accepted';
+    }
+
+    function showCookieConsentUi(show) {
+      console.log('Show Cookie Consent UI:', show);
+      cookieConsentDiv.style.display = show ? 'block' : 'none';
+    }
+
+    async function sendCookieConsentToDiscord() {
+      try {
+        const response = await fetch('/api/cookie', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ consent: 'accepted', timestamp: new Date().toISOString() }),
+        });
+        if (!response.ok) {
+          console.error('エラーが発生しました');
+        } else {
+          console.log('ご協力ありがとうございます！');
+        }
+      } catch (error) {
+        console.error('エラーが発生しました:', error);
+      }
+    }
+
+    acceptCookieBtn.addEventListener('click', () => {
+      console.log('Accept Cookie Clicked');
+      localStorage.setItem(COOKIE_CONSENT_KEY, 'accepted');
+      sendCookieConsentToDiscord();
+      showCookieConsentUi(false);
     });
 
-    declineBtn.addEventListener('click', () => {
-      localStorage.setItem('cookieConsent', 'declined');
-      cookieConsent.style.display = 'none';
+    declineCookieBtn.addEventListener('click', () => {
+      console.log('Decline Cookie Clicked');
+      localStorage.removeItem(COOKIE_CONSENT_KEY);
+      showCookieConsentUi(false);
     });
 
-    updateTokenList();
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('DOM Content Loaded');
+      if (!checkCookieConsent()) {
+        showCookieConsentUi(true);
+      } else {
+        showCookieConsentUi(false);
+      }
+      renderTokenList();
+    });
+
+    generateBtn.addEventListener('click', generateToken);
+    getCharBtn.addEventListener('click', getCharacter);
+    copyBtn.addEventListener('click', copyTokenToClipboard);
   </script>
 </body>
 </html>
